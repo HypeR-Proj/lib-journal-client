@@ -1,34 +1,36 @@
 # SPDX-FileCopyrightText: 2026 roolrz
 # SPDX-License-Identifier: Apache-2.0
 
+
 [package]
 name = "hyper-journal"
 version = "0.0.0"
 edition = "2024"
 license = "Apache-2.0"
 publish = false
-repository = "https://github.com/HypeR-Proj/journal-client"
+repository = "https://github.com/HypeR-Proj/lib-journal-client"
+workspace = "../../app"
+
+[dependencies]
 
 [dependencies.hyper-os]
-version = "=0.0.0"
+workspace = true
 
 [dependencies.hyper-rt]
-version = "=0.0.0"
-features = [
-    "std",
-]
+workspace = true
+features = ["std"]
 
 [dependencies.hyper-service-ipc]
-version = "=0.0.0"
+workspace = true
 
 [dependencies.serde]
-version = "1"
-features = [
-    "derive",
-]
+workspace = true
+features = ["derive"]
 
 [dependencies.serde_json]
-version = "1"
+workspace = true
+
+[lints]
 
 [lints.clippy]
 doc_markdown = "deny"
@@ -47,12 +49,4 @@ unsafe_op_in_unsafe_fn = "deny"
 
 [lints.rust.unexpected_cfgs]
 level = "warn"
-check-cfg = [
-    "cfg(target_os, values(\"hyper\"))",
-]
-
-[workspace]
-members = [
-    ".",
-]
-resolver = "3"
+check-cfg = ["cfg(target_os, values(\"hyper\"))"]
