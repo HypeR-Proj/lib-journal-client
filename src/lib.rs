@@ -4,7 +4,9 @@
 //! Journal registration is delegated only to supervisors. A service receives
 //! byte writers; bytes cannot impersonate another source or forge metadata.
 
-use hyper_os::capability_channel::{CapabilityChannel, CapabilityDisposition};
+use hyper_os::capability_channel::{
+    CapabilityChannel, CapabilityDisposition, CapabilityReceiveSlot,
+};
 use hyper_os::handle::{
     ByteChannelObject, CapabilityChannelObject, HandleRef, OwnedHandle, Rights, RightsOffer,
 };
@@ -14,6 +16,24 @@ use serde::{Deserialize, Serialize};
 pub const QUERY: StartupPurpose<CapabilityChannelObject> = StartupPurpose::new(0x800b_0010);
 pub const MIRROR: StartupPurpose<ByteChannelObject> = StartupPurpose::new(0x800b_0011);
 pub const SOURCE_RIGHTS: Rights = Rights::READ.union(Rights::WAIT);
+
+/// A routed query connection delegates a shared request endpoint. Holding that
+/// endpoint consumes no per-client thread or idle-session slot in the journal.
+pub const QUERY_READY: &[u8] = b"HYPER-JOURNAL-QUERY/1";
+
+pub fn open_query(session: CapabilityChannel, until: u64) -> hyper_os::Result<CapabilityChannel> {
+    let mut bytes = [core::mem::MaybeUninit::uninit(); QUERY_READY.len()];
+    let mut slots = [CapabilityReceiveSlot::new::<CapabilityChannelObject>(
+        hyper_service_ipc::CLIENT_RIGHTS,
+    )];
+    let message = session.receive(until, &mut bytes, &mut slots)?;
+    if message.bytes() != QUERY_READY || message.capability_count() != 1 {
+        return Err(hyper_os::Error::InvalidResponse);
+    }
+    Ok(CapabilityChannel::from_handle(
+        slots[0].take()?.ok_or(hyper_os::Error::MissingHandle)?,
+    ))
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
