@@ -28,3 +28,13 @@ duplication and delegation; it grants no receive authority on the server side.
 It can be retained or delegated to a shell without consuming a server session
 slot. Submit `Query` values with `hyper_service_ipc::request`; each uses a private
 reply channel. Incomplete endpoint handoffs expire after five seconds.
+
+## Source registration
+
+`registration` owns the client/server wire validation. A component name is
+1–255 UTF-8 bytes and contains no Unicode control characters. The complete
+registration, including its four-byte prefix and JSON escaping, must fit in
+512 bytes. `register` rejects invalid local input with `INVALID_ARGUMENT` before
+sending or transferring a capability. The pure encoder/decoder reports the
+specific validation error. Journald uses the same decoder before admitting a
+source; raw `LOGS` names follow the same character and name-size rules.
