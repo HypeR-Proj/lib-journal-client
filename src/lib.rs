@@ -4,6 +4,8 @@
 //! Journal registration is delegated only to supervisors. A service receives
 //! byte writers; bytes cannot impersonate another source or forge metadata.
 
+pub mod registration;
+
 use hyper_os::capability_channel::{
     CapabilityChannel, CapabilityDisposition, CapabilityReceiveSlot,
 };
@@ -88,14 +90,8 @@ pub fn register(
     source: &Source,
     reader: OwnedHandle<ByteChannelObject>,
 ) -> hyper_os::Result<()> {
-    if source.component.is_empty()
-        || source.component.len() > 255
-        || source.component.as_bytes().contains(&0)
-    {
-        return Err(hyper_os::Error::InvalidResponse);
-    }
-    let mut bytes = b"LOG2".to_vec();
-    bytes.extend(serde_json::to_vec(source).map_err(|_| hyper_os::Error::InvalidResponse)?);
+    let bytes = registration::encode(source)
+        .map_err(|_| hyper_os::Error::Status(hyper_os::Status::INVALID_ARGUMENT))?;
     let channel =
         CapabilityChannel::from_handle(connector.duplicate(hyper_service_ipc::CLIENT_RIGHTS)?);
     let mut reader = Some(reader);
